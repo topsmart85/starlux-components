@@ -154,7 +154,6 @@ const passengerDisplayText = computed(() => {
 const updatePassengerCount = (index: number, change: number) => {
   const newCount = passengers.value[index].count + change
   
-  // Apply validation rules
   if (index === 0 && newCount < 1) return // At least 1 adult required
   if (newCount < 0) return
   if (index === 2 && newCount > passengers.value[0].count) return // Infants cannot exceed adults
@@ -174,8 +173,7 @@ const closePassengerDropdown = () => {
 }
 
 // Handle search action
-const handleSearch = () => {
-  // Here you would implement the search functionality
+const handleSearch = () => {  
   console.log('Searching flights with parameters:', {
     tripType: selectedTripType.value.id,
     departureDate: departureDate.value,
