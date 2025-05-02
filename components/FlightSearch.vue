@@ -11,6 +11,10 @@ const isPassengerDropdownOpen = ref(false)
 const passengerDropdownRef = ref<HTMLElement | null>(null)
 const isTripTypeDropdownOpen = ref(false)
 const tripTypeDropdownRef = ref<HTMLElement | null>(null)
+const isFromDropdownOpen = ref(false)
+const fromDropdownRef = ref<HTMLElement | null>(null)
+const isToDropdownOpen = ref(false)
+const toDropdownRef = ref<HTMLElement | null>(null)
 
 // Responsive state
 const isMobile = useMediaQuery('(max-width: 768px)')
@@ -22,6 +26,19 @@ const tripTypes: TripType[] = [
   { id: 'multi-city', name: 'Multi-City' }
 ]
 const selectedTripType = ref(tripTypes[0])
+
+// Origin and destination
+const fromLocation = ref({ code: '', city: 'Please select' })
+const toLocation = ref({ code: '', city: 'Please select' })
+
+// Sample airports for demo
+const airports = [
+  { code: 'TPE', city: 'Taipei, Taiwan' },
+  { code: 'HND', city: 'Tokyo, Japan' },
+  { code: 'SIN', city: 'Singapore' },
+  { code: 'LAX', city: 'Los Angeles, USA' },
+  { code: 'BKK', city: 'Bangkok, Thailand' }
+]
 
 // Dates
 const departureDate = ref('')
@@ -40,7 +57,9 @@ const passengers = ref([...passengerTypes])
 const firstFocusableElementRefs = {
   panel: ref<HTMLElement | null>(null),
   passengerDropdown: ref<HTMLElement | null>(null),
-  tripTypeDropdown: ref<HTMLElement | null>(null)
+  tripTypeDropdown: ref<HTMLElement | null>(null),
+  fromDropdown: ref<HTMLElement | null>(null),
+  toDropdown: ref<HTMLElement | null>(null)
 }
 
 // Promo code
@@ -64,6 +83,20 @@ onClickOutside(passengerDropdownRef, () => {
 onClickOutside(tripTypeDropdownRef, () => {
   if (isTripTypeDropdownOpen.value) {
     isTripTypeDropdownOpen.value = false
+  }
+})
+
+// Close from dropdown when clicking outside
+onClickOutside(fromDropdownRef, () => {
+  if (isFromDropdownOpen.value) {
+    isFromDropdownOpen.value = false
+  }
+})
+
+// Close to dropdown when clicking outside
+onClickOutside(toDropdownRef, () => {
+  if (isToDropdownOpen.value) {
+    isToDropdownOpen.value = false
   }
 })
 
@@ -112,6 +145,40 @@ const toggleTripTypeDropdown = (event?: Event) => {
   }
 }
 
+// Toggle from dropdown
+const toggleFromDropdown = (event?: Event) => {
+  if (event) {
+    event.stopPropagation()
+  }
+  isFromDropdownOpen.value = !isFromDropdownOpen.value
+  isToDropdownOpen.value = false
+    
+  if (isFromDropdownOpen.value) {
+    setTimeout(() => {
+      if (firstFocusableElementRefs.fromDropdown.value) {
+        firstFocusableElementRefs.fromDropdown.value.focus()
+      }
+    }, 100)
+  }
+}
+
+// Toggle to dropdown
+const toggleToDropdown = (event?: Event) => {
+  if (event) {
+    event.stopPropagation()
+  }
+  isToDropdownOpen.value = !isToDropdownOpen.value
+  isFromDropdownOpen.value = false
+    
+  if (isToDropdownOpen.value) {
+    setTimeout(() => {
+      if (firstFocusableElementRefs.toDropdown.value) {
+        firstFocusableElementRefs.toDropdown.value.focus()
+      }
+    }, 100)
+  }
+}
+
 // Select trip type
 const selectTripType = (tripType: TripType, event?: Event) => {
   if (event) {
@@ -125,6 +192,43 @@ const selectTripType = (tripType: TripType, event?: Event) => {
   if (tripTypeButton instanceof HTMLElement) {
     tripTypeButton.focus()
   }
+}
+
+// Select from location
+const selectFromLocation = (airport: typeof airports[0], event?: Event) => {
+  if (event) {
+    event.stopPropagation()
+  }
+  fromLocation.value = airport
+  isFromDropdownOpen.value = false
+  
+  // Return focus to from dropdown trigger
+  const fromButton = fromDropdownRef.value?.querySelector('[role="button"]')
+  if (fromButton instanceof HTMLElement) {
+    fromButton.focus()
+  }
+}
+
+// Select to location
+const selectToLocation = (airport: typeof airports[0], event?: Event) => {
+  if (event) {
+    event.stopPropagation()
+  }
+  toLocation.value = airport
+  isToDropdownOpen.value = false
+  
+  // Return focus to to dropdown trigger
+  const toButton = toDropdownRef.value?.querySelector('[role="button"]')
+  if (toButton instanceof HTMLElement) {
+    toButton.focus()
+  }
+}
+
+// Swap origin and destination
+const swapLocations = () => {
+  const temp = { ...fromLocation.value }
+  fromLocation.value = { ...toLocation.value }
+  toLocation.value = temp
 }
 
 // Computed total passengers
@@ -176,6 +280,8 @@ const closePassengerDropdown = () => {
 const handleSearch = () => {  
   console.log('Searching flights with parameters:', {
     tripType: selectedTripType.value.id,
+    from: fromLocation.value,
+    to: toLocation.value,
     departureDate: departureDate.value,
     returnDate: returnDate.value,
     passengers: passengers.value,
@@ -198,6 +304,12 @@ const handleKeyDown = (e: KeyboardEvent) => {
       e.preventDefault()
     } else if (isTripTypeDropdownOpen.value) {
       isTripTypeDropdownOpen.value = false
+      e.preventDefault()
+    } else if (isFromDropdownOpen.value) {
+      isFromDropdownOpen.value = false
+      e.preventDefault()
+    } else if (isToDropdownOpen.value) {
+      isToDropdownOpen.value = false
       e.preventDefault()
     } else if (isPanelExpanded.value) {
       isPanelExpanded.value = false
@@ -222,31 +334,125 @@ watch(isMobile, (newValue) => {
   if (newValue) {
     isPassengerDropdownOpen.value = false
     isTripTypeDropdownOpen.value = false
+    isFromDropdownOpen.value = false
+    isToDropdownOpen.value = false
   }
 })
 </script>
 
 <template>
-  <div class="flight-search-container w-full max-w-4xl mx-auto bg-purple-950 rounded shadow-lg" ref="panelRef">
-    <!-- Header/Collapsed View -->
-    <div 
-      class="flight-search-header text-white p-4 flex items-center justify-between rounded-t cursor-pointer"
-      @click="togglePanel"
-      @keydown.enter.prevent="togglePanel"
-      @keydown.space.prevent="togglePanel"
-      tabindex="0"
-      role="button"
-      :aria-expanded="isPanelExpanded"
-      aria-controls="flight-search-panel"
-    >
-      <div class="flex items-center">
-        <div class="mr-2 text-xl">TPE <span class="text-sm text-gray-200">Taipei, Taiwan</span></div>
-        <Plane class="mx-2 transform rotate-90 text-amber-500" aria-hidden="true" />
-        <div class="ml-2">To <span class="text-sm text-gray-200">Please select</span></div>
-      </div>
-      <div class="flex items-center">
+  <div class="flight-search-container w-full max-w-12xl mx-auto bg-purple-950 rounded shadow-lg" ref="panelRef">
+    <!-- Main Search Bar -->
+    <div class="flight-search-bar bg-gradient-to-r from-purple-900 to-purple-800 p-4 rounded-t">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <!-- From Location -->
+        <div class="relative w-full md:w-1/3" ref="fromDropdownRef">
+          <div 
+            class="flex flex-col text-white border-b border-gray-400 pb-2 cursor-pointer"
+            @click.stop="toggleFromDropdown"
+            @keydown.enter.stop="toggleFromDropdown"
+            @keydown.space.stop="toggleFromDropdown"
+            tabindex="0"
+            role="button"
+            aria-haspopup="listbox"
+            :aria-expanded="isFromDropdownOpen"
+          >
+            <span class="text-sm text-gray-300">From</span>
+            <div class="flex items-center">
+              <span class="text-xl font-medium mr-2">{{ fromLocation.code }}</span>
+              <span class="text-sm text-gray-200">{{ fromLocation.city }}</span>
+            </div>
+          </div>
+          
+          <!-- From Dropdown -->
+          <div 
+            v-if="isFromDropdownOpen"
+            class="absolute top-full left-0 mt-1 bg-purple-900 border border-gray-500 rounded shadow-lg z-30 w-full"
+            role="listbox"
+            aria-labelledby="from-location-label"
+          >
+            <div class="p-2 bg-purple-800 text-white text-sm">Select Departure</div>
+            <div 
+              v-for="(airport, index) in airports" 
+              :key="airport.code"
+              class="p-3 hover:bg-purple-800 cursor-pointer border-b border-gray-700 last:border-b-0"
+              :class="{ 'bg-purple-800': fromLocation.code === airport.code }"
+              @click.stop="selectFromLocation(airport, $event)"
+              @keydown.enter.stop="selectFromLocation(airport, $event)"
+              @keydown.space.stop="selectFromLocation(airport, $event)"
+              role="option"
+              :aria-selected="fromLocation.code === airport.code"
+              tabindex="0"
+              :ref="index === 0 ? firstFocusableElementRefs.fromDropdown : undefined"
+            >
+              <div class="flex items-center">
+                <span class="text-lg font-medium mr-2 text-white">{{ airport.code }}</span>
+                <span class="text-sm text-gray-300">{{ airport.city }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Swap Button -->
+        <button 
+          class="flex items-center justify-center bg-amber-500 rounded-full w-10 h-10 text-black focus:outline-none focus:ring-2 focus:ring-amber-400"
+          @click="swapLocations"
+          aria-label="Swap departure and destination"
+        >
+          <Plane class="transform rotate-90" :size="20" />
+        </button>
+        
+        <!-- To Location -->
+        <div class="relative w-full md:w-1/3" ref="toDropdownRef">
+          <div 
+            class="flex flex-col text-white border-b border-gray-400 pb-2 cursor-pointer"
+            @click.stop="toggleToDropdown"
+            @keydown.enter.stop="toggleToDropdown"
+            @keydown.space.stop="toggleToDropdown"
+            tabindex="0"
+            role="button"
+            aria-haspopup="listbox"
+            :aria-expanded="isToDropdownOpen"
+          >
+            <span class="text-sm text-gray-300">To</span>
+            <div class="flex items-center">
+              <span class="text-xl font-medium mr-2">{{ toLocation.code }}</span>
+              <span class="text-sm text-gray-200">{{ toLocation.city }}</span>
+            </div>
+          </div>
+          
+          <!-- To Dropdown -->
+          <div 
+            v-if="isToDropdownOpen"
+            class="absolute top-full left-0 mt-1 bg-purple-900 border border-gray-500 rounded shadow-lg z-30 w-full"
+            role="listbox"
+            aria-labelledby="to-location-label"
+          >
+            <div class="p-2 bg-purple-800 text-white text-sm">Select Destination</div>
+            <div 
+              v-for="(airport, index) in airports" 
+              :key="airport.code"
+              class="p-3 hover:bg-purple-800 cursor-pointer border-b border-gray-700 last:border-b-0"
+              :class="{ 'bg-purple-800': toLocation.code === airport.code }"
+              @click.stop="selectToLocation(airport, $event)"
+              @keydown.enter.stop="selectToLocation(airport, $event)"
+              @keydown.space.stop="selectToLocation(airport, $event)"
+              role="option"
+              :aria-selected="toLocation.code === airport.code"
+              tabindex="0"
+              :ref="index === 0 ? firstFocusableElementRefs.toDropdown : undefined"
+            >
+              <div class="flex items-center">
+                <span class="text-lg font-medium mr-2 text-white">{{ airport.code }}</span>
+                <span class="text-sm text-gray-300">{{ airport.city }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Trip Type Selection -->
         <div 
-          class="mr-4 relative"
+          class="relative w-full md:w-1/4"
           ref="tripTypeDropdownRef"
         >
           <div 
@@ -257,24 +463,26 @@ watch(isMobile, (newValue) => {
             role="button"
             aria-haspopup="listbox"
             :aria-expanded="isTripTypeDropdownOpen"
-            class="flex items-center focus:outline-none focus:ring-2 focus:ring-amber-400 rounded p-1"
+            class="flex flex-col text-white border-b border-gray-400 pb-2 cursor-pointer"
           >
-            <span class="text-gray-200">Trip type:</span>
-            <span class="font-semibold ml-1">{{ selectedTripType.name }}</span>
-            <ChevronDown class="ml-1" :class="{ 'transform rotate-180': isTripTypeDropdownOpen }" :size='16' />
+            <span class="text-sm text-gray-300">Trip Type</span>
+            <div class="flex items-center justify-between">
+              <span class="font-medium">{{ selectedTripType.name }}</span>
+              <ChevronDown class="ml-1" :class="{ 'transform rotate-180': isTripTypeDropdownOpen }" />
+            </div>
           </div>
           
           <!-- Trip Type Dropdown -->
           <div 
             v-if="isTripTypeDropdownOpen"
-            class="absolute top-full left-0 mt-1 bg-purple-900 border border-gray-500 rounded shadow-lg z-20 w-40"
+            class="absolute top-full left-0 mt-1 bg-purple-900 border border-gray-500 rounded shadow-lg z-20 w-full"
             role="listbox"
             aria-labelledby="trip-type-label"
           >
             <div 
               v-for="(tripType, index) in tripTypes" 
               :key="tripType.id"
-              class="p-3 hover:bg-purple-800 cursor-pointer"
+              class="p-3 hover:bg-purple-800 cursor-pointer border-b border-gray-700 last:border-b-0"
               :class="{ 'bg-purple-800': tripType.id === selectedTripType.id }"
               @click.stop="selectTripType(tripType, $event)"
               @keydown.enter.stop="selectTripType(tripType, $event)"
@@ -288,13 +496,17 @@ watch(isMobile, (newValue) => {
             </div>
           </div>
         </div>
-        
+      </div>
+      
+      <!-- Toggle Button for Expanded Panel -->
+      <div class="flex justify-end mt-4">
         <button 
           type="button" 
-          class="focus:outline-none focus:ring-2 focus:ring-amber-400 rounded p-1"
-          @click.stop="togglePanel"
-          :aria-label="isPanelExpanded ? 'Collapse flight search panel' : 'Expand flight search panel'"
+          class="bg-amber-500 hover:bg-amber-600 text-black font-semibold py-2 px-4 rounded flex items-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+          @click="togglePanel"
+          :aria-label="isPanelExpanded ? 'Show fewer options' : 'Show more options'"
         >
+          <span class="mr-2">{{ isPanelExpanded ? 'Show fewer options' : 'Show more options' }}</span>
           <ChevronDown v-if="!isPanelExpanded" aria-hidden="true" />
           <X v-else aria-hidden="true" />
         </button>

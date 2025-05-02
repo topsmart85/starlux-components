@@ -36,7 +36,7 @@ onMounted(() => {
       </div>
 
       <!-- Flight search overlay -->
-      <div class="relative z-10 py-16">
+      <div class="relative z-10">
         <!-- Translucent purple flight search bar -->
         <FlightSearch />
 
