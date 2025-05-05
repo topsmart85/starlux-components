@@ -212,6 +212,22 @@ const toggleTripTypeDropdown = (event?: Event) => {
   }
 }
 
+// Toggle panel dropdown
+const toggleExpandPanelDropdown = (event?: Event) => {
+  if (event) {
+    event.stopPropagation()
+  }
+    
+  if (!isPanelExpanded.value) {
+    isPanelExpanded.value = true;
+    setTimeout(() => {
+      if (firstFocusableElementRefs.panel.value) {
+        firstFocusableElementRefs.panel.value.focus()
+      }
+    }, 100)
+  }
+}
+
 // Toggle from dropdown
 const toggleFromDropdown = (event?: Event) => {
   if (event) {
@@ -224,6 +240,15 @@ const toggleFromDropdown = (event?: Event) => {
     setTimeout(() => {
       if (firstFocusableElementRefs.fromDropdown.value) {
         firstFocusableElementRefs.fromDropdown.value.focus()
+      }
+    }, 100)
+  }
+
+  if (!isPanelExpanded.value) {
+    isPanelExpanded.value = true;
+    setTimeout(() => {
+      if (firstFocusableElementRefs.panel.value) {
+        firstFocusableElementRefs.panel.value.focus()
       }
     }, 100)
   }
@@ -241,6 +266,14 @@ const toggleToDropdown = (event?: Event) => {
     setTimeout(() => {
       if (firstFocusableElementRefs.toDropdown.value) {
         firstFocusableElementRefs.toDropdown.value.focus()
+      }
+    }, 100)
+  }
+  if (!isPanelExpanded.value) {
+    isPanelExpanded.value = true;
+    setTimeout(() => {
+      if (firstFocusableElementRefs.panel.value) {
+        firstFocusableElementRefs.panel.value.focus()
       }
     }, 100)
   }
@@ -420,7 +453,15 @@ watch(isMobile, (newValue) => {
   <div class="w-full bg-purple-950 bg-opacity-90">
     <div class="container w-full mx-auto rounded shadow-lg" ref="panelRef">
       <!-- Main Search Bar -->
-      <div class="flight-search-bar p-4 rounded-t">
+      <div 
+        @click.stop="toggleExpandPanelDropdown"
+        @keydown.enter.stop="toggleExpandPanelDropdown"
+        @keydown.space.stop="toggleExpandPanelDropdown"
+        tabindex="0"
+        role="button"
+        aria-haspopup="listbox"
+        :aria-expanded="isPanelExpanded"
+        class="flight-search-bar p-4 rounded-t">
         <div class="flex flex-col md:flex-row items-center gap-4">
           <!-- From Location -->
           <div class="relative w-full md:w-1/4" ref="fromDropdownRef">
@@ -570,18 +611,18 @@ watch(isMobile, (newValue) => {
             </div>
           </div>
         </div>
-        
-        <!-- Toggle Button for Expanded Panel -->
-        <div class="flex justify-end" v-if="isPanelExpanded">
-          <button 
-            type="button" 
-            class="bg-amber-500 hover:bg-amber-600 text-black font-semibold py-2 px-4 rounded flex items-center focus:outline-none focus:ring-2 focus:ring-amber-400"
-            @click="togglePanel"
-          >
-            <ChevronDown v-if="!isPanelExpanded" aria-hidden="true" />
-            <X v-else aria-hidden="true" />
-          </button>
-        </div>
+      </div>
+      
+      <!-- Toggle Button for Expanded Panel -->
+      <div class="flex justify-end" v-if="isPanelExpanded">
+        <button 
+          type="button" 
+          class="bg-amber-500 hover:bg-amber-600 text-black font-semibold py-2 px-4 rounded flex items-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+          @click="togglePanel"
+        >
+          <ChevronDown v-if="!isPanelExpanded" aria-hidden="true" />
+          <X v-else aria-hidden="true" />
+        </button>
       </div>
 
       <!-- Expanded Panel -->
@@ -614,8 +655,7 @@ watch(isMobile, (newValue) => {
                   </span>
                   <span v-else>Please Select</span>
                 </div>
-              </div>
-              
+              </div>              
               <div v-if="isCalendarOpen" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[1000]">
                 <div class="bg-white rounded-lg p-6 w-[600px]">
                   <div class="flex justify-between items-center mb-4">
@@ -758,7 +798,7 @@ watch(isMobile, (newValue) => {
               </div>
               
               <!-- Passenger Dropdown Menu -->
-              <div v-if="isPassengerDropdownOpen" class="text-black fixed top-0 left-0 w-full h-full bg-[#000000]/50 flex justify-center items-center">
+              <div v-if="isPassengerDropdownOpen" class="text-black fixed top-0 left-0 w-full h-full bg-[#000000]/50 flex justify-center items-center z-10">
                 <div class="bg-white p-[20px] rounded-[8px] w-[600px] relative">
                   <button class="absolute top-[10px] right-[10px] cursor-pointer" @click="closePassengerDropdown">X</button>
                   <div class="mb-[20px]">

@@ -27,9 +27,9 @@ onMounted(() => {
     />
     <div class="w-full">
     <!-- Hero search section with background image -->
-      <section class="relative">       
+      <section class="relative">                
         <!-- Flight search overlay -->
-        <div class="relative z-10 bg-cover min-h-[600px] bg-center" :style="{ backgroundImage: `url(${bgImage})` }">
+        <div class="relative z-10 bg-cover min-h-[697px] bg-center" :style="{ backgroundImage: `url(${bgImage})` }">
           <!-- Translucent purple flight search bar -->
           <FlightSearch />
 
