@@ -64,6 +64,24 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
   }
+  /* Add this to your component's <style> section or global CSS */
+  .focus-visible-indicator:focus {
+    outline: 2px solid #f59e0b; /* amber-500 color */
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3); /* amber glow */
+  }
+
+  /* For elements that already have focus styles, you can enhance them */
+  .enhanced-focus:focus {
+    transform: scale(1.02);
+    transition: transform 0.1s ease-in-out;
+  }
+  *:focus {
+    outline: 3px solid red !important;
+    background-color: yellow !important;
+    color: black !important;
+  }
+  
 }
  
 @layer base {

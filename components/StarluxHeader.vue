@@ -1,24 +1,20 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 
-// Props for customization
-const props = defineProps({
-  announcementText: {
-    type: String,
-    default: 'Fly to and from Ontario with STARLUX from June 2!'
-  },
-  showAnnouncementBanner: {
-    type: Boolean,
-    default: true
-  },
-  currentLanguage: {
-    type: String,
-    default: 'English'
-  },
-  currentRegion: {
-    type: String,
-    default: 'Taiwan'
-  }
+// Props with TypeScript interface
+interface Props {
+  announcementText?: string;
+  showAnnouncementBanner?: boolean;
+  currentLanguage?: string;
+  currentRegion?: string;
+}
+
+// Define props with TypeScript syntax
+const props = withDefaults(defineProps<Props>(), {
+  announcementText: 'Fly to and from Ontario with STARLUX from June 2!',
+  showAnnouncementBanner: true,
+  currentLanguage: 'English',
+  currentRegion: 'Taiwan'
 });
 
 // Carousel slide indicators
@@ -55,7 +51,7 @@ const prevSlide = () => {
 </script>
 
 <template>
-  <div class="starlux-header">
+  <div>
     <!-- Announcement banner -->
     <div
       v-if="showAnnouncementBanner"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { User, CheckSquare, Clock, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
 // Define tabs
@@ -25,28 +25,75 @@ const bookingRef = ref('')
 const lastName = ref('')
 const firstName = ref('')
 
+// Refs for focus management - use proper typing
+const tabRefs = ref<Record<string, HTMLElement | null>>({})
+const backButtonRef = ref<HTMLElement | null>(null)
+
+// Function to set ref safely with proper type casting
+const setTabRef = (el: any, id: string) => {
+  if (el) {
+    // Use $el for component instances or the element itself for DOM elements
+    tabRefs.value[id] = el instanceof HTMLElement ? el : null
+  }
+}
+
 const setActiveTab = (tabId: string) => {
   activeTab.value = tabId
   // Hide tabs navigation when "My Trip" or "Check In" is selected
   if (tabId === 'my-trip' || tabId === 'check-in' || tabId === 'flight-status') {
     showTabs.value = false
+    
+    // Focus the back button after tab content is rendered
+    nextTick(() => {
+      if (backButtonRef.value) {
+        backButtonRef.value.focus()
+      }
+    })
   }
 }
 
-const selectFlightStatus = (evt: any) => {
-  selectedFlightStatus.value = evt.target.value;
+const selectFlightStatus = (evt: Event) => {
+  const target = evt.target as HTMLSelectElement
+  selectedFlightStatus.value = target.value
 }
 
 // Go back to tabs view
 const backToTabs = () => {
   showTabs.value = true
   activeTab.value = '' // Clear active tab when returning to tabs view
+  
+  // Focus the previously active tab after returning to tabs view
+  nextTick(() => {
+    // Focus the first tab by default
+    const firstTabRef = tabRefs.value[tabs[0].id]
+    if (firstTabRef) {
+      firstTabRef.focus()
+    }
+  })
 }
 
 const handleSubmit = () => {
   // In a real implementation, this would handle form submission
   console.log('Form submitted', { bookingRef: bookingRef.value, lastName: lastName.value, firstName: firstName.value })
 }
+
+// Handle keyboard navigation for tabs
+const handleTabKeyDown = (event: KeyboardEvent, tabId: string) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    setActiveTab(tabId)
+  }
+}
+
+// Focus the first tab on component mount
+onMounted(() => {
+  nextTick(() => {
+    const firstTabRef = tabRefs.value[tabs[0].id]
+    if (firstTabRef) {
+      firstTabRef.focus()
+    }
+  })
+})
 </script>
 
 <template>
@@ -59,15 +106,17 @@ const handleSubmit = () => {
           v-for="tab in tabs" 
           :key="tab.id"
           @click="setActiveTab(tab.id)"
+          @keydown="(e) => handleTabKeyDown(e, tab.id)"
           :class="[
             'tab-item flex-1 flex justify-center items-center p-6 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white font-light',
             activeTab === tab.id ? 'text-white border-b-2 border-amber-500' : 'hover:text-white'
           ]"
           :aria-selected="activeTab === tab.id"
-          :tabindex="activeTab === tab.id ? 0 : -1"
+          :tabindex="0"
           role="tab"
           :id="`tab-${tab.id}`"
           :aria-controls="`panel-${tab.id}`"
+          :ref="el => setTabRef(el, tab.id)"
         >
           <component :is="tab.icon" class="mr-3" />
           {{ tab.label }}
@@ -82,14 +131,15 @@ const handleSubmit = () => {
           role="tabpanel"
           id="panel-my-trip"
           aria-labelledby="tab-my-trip"
-          class="tab-panel py-3"
+          class="tab-panel py-3 text-white"
         >
           <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center gap-4">
             <button 
               @click="backToTabs" 
               type="button" 
-              class="text-white cursor-pointer" 
+              class="text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-white" 
               aria-label="Back to tabs"
+              ref="backButtonRef"
             >
               <ChevronLeft :size="24" />
             </button>
@@ -149,14 +199,15 @@ const handleSubmit = () => {
           role="tabpanel"
           id="panel-check-in"
           aria-labelledby="tab-check-in"
-          class="tab-panel py-3"
+          class="tab-panel py-3 text-white"
         >
           <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center gap-4">
             <button 
               @click="backToTabs" 
               type="button" 
-              class="text-white cursor-pointer" 
+              class="text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-white" 
               aria-label="Back to tabs"
+              ref="backButtonRef"
             >
               <ChevronLeft :size="24" />
             </button>
@@ -218,48 +269,49 @@ const handleSubmit = () => {
           aria-labelledby="tab-flight-status"
           class="tab-panel py-3 text-white"
         >
-          <form @submit.prevent="handleSubmit" className="flex flex-col md:flex-row items-center gap-4">
+          <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center gap-4">
             <button 
               @click="backToTabs" 
               type="button" 
-              className="text-white cursor-pointer" 
+              class="text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-white" 
               aria-label="Back to tabs"
+              ref="backButtonRef"
             >
               <ChevronLeft :size="24" />
             </button>
             
-            <div className="w-[150px] flex items-center">
-              <Clock className="mr-3" />
+            <div class="w-[150px] flex items-center">
+              <Clock class="mr-3" />
               Flight Status
             </div>
             
-            <div className="flex-1 flex flex-col md:flex-row gap-4 w-full">
-              <div className="relative w-[200px]">
+            <div class="flex-1 flex flex-col md:flex-row gap-4 w-full">
+              <div class="relative w-[200px]">
                 <select 
                   @change="selectFlightStatus"
-                  className="w-full appearance-none bg-white text-black border border-white rounded px-4 py-2 pr-8 focus:outline-none focus:border-amber-500"
-                  defaultValue=""
+                  class="w-full appearance-none bg-white text-black border border-white rounded px-4 py-2 pr-8 focus:outline-none focus:border-amber-500"
+                  :value="selectedFlightStatus"
                 >
                   <option value="" disabled>Search By Route</option>
                   <option value="route">By Route</option>
                   <option value="flight">By Flight Number</option>
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <ChevronRight :size="16" className="text-black" />
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <ChevronRight :size="16" class="text-black" />
                 </div>
               </div>
               
-              <div v-if="selectedFlightStatus === 'route'" className="flex-1 flex items-center gap-4">
-                <div className="flex-1 relative flex gap-8 mx-4 cursor-pointer">
+              <div v-if="selectedFlightStatus === 'route'" class="flex-1 flex items-center gap-4">
+                <div class="flex-1 relative flex gap-8 mx-4 cursor-pointer">
                   <div class="text-3xl">From</div>
                   <div class="hover:underline">Please select</div>
                 </div>
                 
-                <div className="flex items-center justify-center">
-                  <ChevronRight :size="24" className="text-amber-500" />
+                <div class="flex items-center justify-center">
+                  <ChevronRight :size="24" class="text-amber-500" />
                 </div>
                 
-                <div className="flex-1 relative flex gap-8 mx-4 cursor-pointer">
+                <div class="flex-1 relative flex gap-8 mx-4 cursor-pointer">
                   <div class="text-3xl">To</div>
                   <div class="hover:underline">Please select</div>
                 </div>
@@ -277,7 +329,7 @@ const handleSubmit = () => {
             
             <button 
               type="submit"
-              className="bg-amber-500 hover:bg-amber-600 text-black p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400"
+              class="bg-amber-500 hover:bg-amber-600 text-black p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400"
               aria-label="Search flight status"
             >
               <ChevronRight :size="24" />
